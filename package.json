@@ -20,9 +20,10 @@
     "uuid": "^9.0.0"
   },
   "scripts": {
-    "start": "npx ts-node src/server.ts",
+    "start": "node dist/server.js",
     "dev": "npx nodemon src/server.ts",
     "test": "npx jest",
-    "test:watch": "npx jest --watch"
+    "test:watch": "npx jest --watch",
+    "build": "tsc"
   }
 }
