@@ -38,6 +38,5 @@ export const createScore = async (req: Request, res: Response) => {
 }
 
 const transformLeaderboard = (scores: Score[]): string => {
-  console.log(scores)
   return scores.map((score, index) => `${index+1};${score.player};${score.score}`).join('\n')
 }
