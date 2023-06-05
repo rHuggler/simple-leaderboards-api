@@ -16,5 +16,5 @@ export class Score {
   public score!: number
 }
 
-export const LeaderboardModel = getModelForClass(Leaderboard)
-export const ScoreModel = getModelForClass(Score)
+export const LeaderboardModel = getModelForClass(Leaderboard, { schemaOptions: { versionKey: false } })
+export const ScoreModel = getModelForClass(Score, { schemaOptions: { versionKey: false } })

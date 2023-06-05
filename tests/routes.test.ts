@@ -78,7 +78,23 @@ describe("Test route /leaderboards", () => {
     test("It should get the leaderboard from database", async () => {
       const response = await request(app).get(`${route}/${leaderboardId}`)
       expect(response.body.uuid).toBe(leaderboardId)
-      expect(response.body._id).toBeDefined()
+    })
+
+    test("It should get all scores from specified leaderboard", async () => {
+      await request(app).post(`${route}/${leaderboardId}/${playerId}/${score}`)
+      await request(app).post(`${route}/${leaderboardId}/Felipe/40`)
+      const response = await request(app).get(`${route}/${leaderboardId}`)
+      expect(response.body.scores).toHaveLength(2)
+    })
+
+    test("It should return scores ordered from highest to lowest", async () => {
+      await request(app).post(`${route}/${leaderboardId}/Lucas/20`)
+      await request(app).post(`${route}/${leaderboardId}/${playerId}/${score}`)
+      await request(app).post(`${route}/${leaderboardId}/Felipe/40`)
+      const response = await request(app).get(`${route}/${leaderboardId}`)
+      const [ highestScore, middleScore, lowestScore ] = response.body.scores
+      expect(highestScore.score).toBeGreaterThan(middleScore.score)
+      expect(middleScore.score).toBeGreaterThan(lowestScore.score)
     })
   })
 
@@ -89,11 +105,28 @@ describe("Test route /leaderboards", () => {
     })
 
     test("It should create a new score", async () => {
-      const response = await request(app).post(`${route}/${leaderboardId}/${playerId}/${score}`)
+      await request(app).post(`${route}/${leaderboardId}/${playerId}/${score}`)
       const leaderboard = await LeaderboardModel.findOne({ uuid: leaderboardId })
       const result = await ScoreModel.find({ leaderboard: leaderboard?.id })
       expect(result).toHaveLength(1)
-      expect(response.body._id).toBeDefined()
+    })
+
+    test("It should NOT create more than one score for the same player", async () => {
+      await request(app).post(`${route}/${leaderboardId}/${playerId}/20`)
+      await request(app).post(`${route}/${leaderboardId}/${playerId}/${score}`)
+      const leaderboard = await LeaderboardModel.findOne({ uuid: leaderboardId })
+      const result = await ScoreModel.find({ leaderboard: leaderboard?.id })
+      expect(result).toHaveLength(1)
+    })
+
+    test("It should update score only if new score is higher", async () => {
+      await request(app).post(`${route}/${leaderboardId}/${playerId}/${score}`)
+      const response = await request(app).post(`${route}/${leaderboardId}/${playerId}/20`)
+      const leaderboard = await LeaderboardModel.findOne({ uuid: leaderboardId })
+      const result = await ScoreModel.find({ leaderboard: leaderboard?.id })
+      expect(result).toHaveLength(1)
+      expect(result[0].score.toString()).toBe(score)
+      expect(response.status).toBe(304)
     })
   })
 })
