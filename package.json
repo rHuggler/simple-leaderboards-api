@@ -12,9 +12,10 @@
     "typescript": "^5.1.3"
   },
   "dependencies": {
+    "@typegoose/typegoose": "^11.2.0",
+    "dotenv": "^16.1.4",
     "express": "^4.18.2",
-    "sequelize": "^6.32.0",
-    "sqlite3": "^5.1.6",
+    "mongoose": "^7.2.2",
     "uuid": "^9.0.0"
   },
   "scripts": {

@@ -1,5 +1,9 @@
-import app from "./app"
+import { app } from "./app"
+import { config } from 'dotenv'
+import { envs } from "./env"
 
-app.listen(3000, () => {
-  console.log('Listening on http://localhost:3000...')
+config()
+
+app.listen(envs.PORT, () => {
+  console.log(`Listening on ${envs.PORT}...`)
 })
