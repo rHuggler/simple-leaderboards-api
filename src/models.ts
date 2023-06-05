@@ -1,7 +1,20 @@
-import { Sequelize, DataTypes } from 'sequelize'
+import { prop, Ref, getModelForClass } from '@typegoose/typegoose'
 
-const sequelize = new Sequelize('sqlite::memory:')
+export class Leaderboard {
+  @prop()
+  public uuid!: string
+}
 
-const Leaderboard = sequelize.define('Leaderboard', {
-  id: DataTypes.UUIDV4,
-})
+export class Score {
+  @prop({ ref: () => Leaderboard })
+  public leaderboard!: Ref<Leaderboard>
+
+  @prop()
+  public player!: string
+
+  @prop()
+  public score!: number
+}
+
+export const LeaderboardModel = getModelForClass(Leaderboard)
+export const ScoreModel = getModelForClass(Score)
