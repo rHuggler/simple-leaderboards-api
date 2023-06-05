@@ -3,6 +3,7 @@ import { app } from '../src/app'
 import { connectDatabase, disconnectDatabase, dropCollections } from './test_database'
 import { LeaderboardModel, ScoreModel } from '../src/models'
 import { config } from 'dotenv'
+import { envs } from '../src/env'
 config()
 
 beforeAll(async () => {
@@ -28,22 +29,22 @@ describe("Test route /", () => {
   const route = '/'
 
   test("It should respond the GET method", async () => {
-    const response = await request(app).get(route)
+    const response = await request(app).get(route).set('x-api-key', envs.API_KEY)
     expect(response.statusCode).toBe(201)
   })
 
   test("It should respond with new leaderboard id", async () => {
-    const response = await request(app).get(route)
+    const response = await request(app).get(route).set('x-api-key', envs.API_KEY)
     expect(response.body).toHaveProperty('uuid')
   })
 
   test("Leaderboard id must have v4 UUID format", async () => {
-    const response = await request(app).get(route)
+    const response = await request(app).get(route).set('x-api-key', envs.API_KEY)
     expect(response.body.uuid).toMatch(/^[\w\d]{8}-(?:[\w\d]{4}-){3}[\w\d]{12}$/gm)
   })
 
   test("It should create a leaderboard on database", async () => {
-    const response = await request(app).get(route)
+    const response = await request(app).get(route).set('x-api-key', envs.API_KEY)
     const result = await LeaderboardModel.findOne({ uuid: response.body.uuid })
     expect(result?.uuid).toBe(response.body.uuid)
   })
@@ -60,68 +61,85 @@ describe("Test route /leaderboards", () => {
   })
 
   test("It should NOT respond the GET method", async () => {
-    const response = await request(app).get(route)
+    const response = await request(app).get(route).set('x-api-key', envs.API_KEY)
     expect(response.status).toBe(404)
   })
 
   test("It should NOT respond the POST method", async () => {
-    const response = await request(app).post(route)
+    const response = await request(app).post(route).set('x-api-key', envs.API_KEY)
     expect(response.status).toBe(404)
   })
 
   describe("Test route /leaderboards/:id", () => {
     test("It should respond the GET method", async () => {
-      const response = await request(app).get(`${route}/${leaderboardId}`)
+      const response = await request(app).get(`${route}/${leaderboardId}`).set('x-api-key', envs.API_KEY)
       expect(response.status).toBe(200)
     })
 
     test("It should get the leaderboard from database", async () => {
-      const response = await request(app).get(`${route}/${leaderboardId}`)
+      const response = await request(app).get(`${route}/${leaderboardId}`).set('x-api-key', envs.API_KEY)
       expect(response.body.uuid).toBe(leaderboardId)
     })
 
     test("It should get all scores from specified leaderboard", async () => {
-      await request(app).post(`${route}/${leaderboardId}/${playerId}/${score}`)
-      await request(app).post(`${route}/${leaderboardId}/Felipe/40`)
-      const response = await request(app).get(`${route}/${leaderboardId}`)
+      await request(app).post(`${route}/${leaderboardId}/${playerId}/${score}`).set('x-api-key', envs.API_KEY)
+      await request(app).post(`${route}/${leaderboardId}/Felipe/40`).set('x-api-key', envs.API_KEY)
+      const response = await request(app).get(`${route}/${leaderboardId}`).set('x-api-key', envs.API_KEY)
       expect(response.body.scores).toHaveLength(2)
     })
 
     test("It should return scores ordered from highest to lowest", async () => {
-      await request(app).post(`${route}/${leaderboardId}/Lucas/20`)
-      await request(app).post(`${route}/${leaderboardId}/${playerId}/${score}`)
-      await request(app).post(`${route}/${leaderboardId}/Felipe/40`)
-      const response = await request(app).get(`${route}/${leaderboardId}`)
+      await request(app).post(`${route}/${leaderboardId}/Lucas/20`).set('x-api-key', envs.API_KEY)
+      await request(app).post(`${route}/${leaderboardId}/${playerId}/${score}`).set('x-api-key', envs.API_KEY)
+      await request(app).post(`${route}/${leaderboardId}/Felipe/40`).set('x-api-key', envs.API_KEY)
+      const response = await request(app).get(`${route}/${leaderboardId}`).set('x-api-key', envs.API_KEY)
       const [ highestScore, middleScore, lowestScore ] = response.body.scores
       expect(highestScore.score).toBeGreaterThan(middleScore.score)
       expect(middleScore.score).toBeGreaterThan(lowestScore.score)
+    })
+
+    describe("Test route /leaderboards/:id/semicolon", () => {
+      test("It should respond the GET method", async () => {
+        const response = await request(app).get(`${route}/${leaderboardId}/semicolon`).set('x-api-key', envs.API_KEY)
+        expect(response.status).toBe(200)
+      })
+
+      test("It should return semicolon-separated text", async () => {
+        await request(app).post(`${route}/${leaderboardId}/Lucas/${score}`).set('x-api-key', envs.API_KEY)
+        await request(app).post(`${route}/${leaderboardId}/${playerId}/${score}`).set('x-api-key', envs.API_KEY)
+        const response = await request(app).get(`${route}/${leaderboardId}/semicolon`).set('x-api-key', envs.API_KEY)
+        expect(response.body).toEqual({})
+        expect(response.text).toBeTruthy()
+        expect(response.text).toContain(';')
+        expect(response.text).toContain('\n')
+      })
     })
   })
 
   describe("Test route /leaderboards/:id/:player/:score", () => {
     test("It should respond the POST method", async () => {
-      const response = await request(app).post(`${route}/${leaderboardId}/${playerId}/${score}`)
+      const response = await request(app).post(`${route}/${leaderboardId}/${playerId}/${score}`).set('x-api-key', envs.API_KEY)
       expect(response.status).toBe(201)
     })
 
     test("It should create a new score", async () => {
-      await request(app).post(`${route}/${leaderboardId}/${playerId}/${score}`)
+      await request(app).post(`${route}/${leaderboardId}/${playerId}/${score}`).set('x-api-key', envs.API_KEY)
       const leaderboard = await LeaderboardModel.findOne({ uuid: leaderboardId })
       const result = await ScoreModel.find({ leaderboard: leaderboard?.id })
       expect(result).toHaveLength(1)
     })
 
     test("It should NOT create more than one score for the same player", async () => {
-      await request(app).post(`${route}/${leaderboardId}/${playerId}/20`)
-      await request(app).post(`${route}/${leaderboardId}/${playerId}/${score}`)
+      await request(app).post(`${route}/${leaderboardId}/${playerId}/20`).set('x-api-key', envs.API_KEY)
+      await request(app).post(`${route}/${leaderboardId}/${playerId}/${score}`).set('x-api-key', envs.API_KEY)
       const leaderboard = await LeaderboardModel.findOne({ uuid: leaderboardId })
       const result = await ScoreModel.find({ leaderboard: leaderboard?.id })
       expect(result).toHaveLength(1)
     })
 
     test("It should update score only if new score is higher", async () => {
-      await request(app).post(`${route}/${leaderboardId}/${playerId}/${score}`)
-      const response = await request(app).post(`${route}/${leaderboardId}/${playerId}/20`)
+      await request(app).post(`${route}/${leaderboardId}/${playerId}/${score}`).set('x-api-key', envs.API_KEY)
+      const response = await request(app).post(`${route}/${leaderboardId}/${playerId}/20`).set('x-api-key', envs.API_KEY)
       const leaderboard = await LeaderboardModel.findOne({ uuid: leaderboardId })
       const result = await ScoreModel.find({ leaderboard: leaderboard?.id })
       expect(result).toHaveLength(1)
